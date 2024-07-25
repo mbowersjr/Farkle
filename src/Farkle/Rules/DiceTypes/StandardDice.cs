@@ -5,7 +5,7 @@ namespace Farkle.Rules.DiceTypes;
 public class StandardDice : DiceBase
 {
     public override string Name => "Standard";
-    public override string Description => "Standard dice that with equally probable rolls.";
+    public override string Description => "Standard dice with equally probable sides.";
 
     public StandardDice()
     {

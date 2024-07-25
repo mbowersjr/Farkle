@@ -28,18 +28,17 @@ public class GuiService : SimpleDrawableGameComponent
 
     private List<GuiViewBase> _views = new List<GuiViewBase>();
 
+    
+    private Num.Vector2 _renderAreaSize;
+    private IntPtr _renderTexturePtr;
+    private Texture2D _renderTexture;
+    private RenderTarget2D _renderTarget;
+    public RenderTarget2D ViewportRenderTarget => _renderTarget;
+
     public GuiService(GameMain game)
     {
         _game = game;
     }
-
-    private IntPtr _renderTexturePtr;
-    private Texture2D _renderTexture;
-    private RenderTarget2D _renderTarget;
-    public IntPtr GetRenderTexturePtr() => _renderTexturePtr;
-
-    private GameAreaView _gameAreaView;
-    public GameAreaView GameAreaView => _gameAreaView;
 
     public override void Initialize()
     {
@@ -53,11 +52,10 @@ public class GuiService : SimpleDrawableGameComponent
 
         _imGuiRenderer.RebuildFontAtlas();
 
+        ResizeRenderTexture(_game.GraphicsDevice.Viewport.Width, _game.GraphicsDevice.Viewport.Height);
+
         _views.Add(new ScorecardView(_game));
         _views.Add(new DiceCollectionView(_game));
-        
-        _gameAreaView = new GameAreaView(_game);
-        _views.Add(_gameAreaView);
         
         foreach (GuiViewBase view in _views)
         {
@@ -95,11 +93,6 @@ public class GuiService : SimpleDrawableGameComponent
 
         CreateMainWindow(gameTime);
 
-        foreach (GuiViewBase view in _views)
-        {
-            view.Draw(gameTime);
-        }
-
         if (DebuggingWindows.Metrics) ImGui.ShowMetricsWindow(ref DebuggingWindows.Metrics);
         if (DebuggingWindows.DebugLog) ImGui.ShowDebugLogWindow(ref DebuggingWindows.DebugLog);
         if (DebuggingWindows.StackTool) ImGui.ShowIDStackToolWindow(ref DebuggingWindows.StackTool);
@@ -111,46 +104,109 @@ public class GuiService : SimpleDrawableGameComponent
         _imGuiRenderer.AfterLayout();
     }
 
-
+    private bool _dockspaceOpen = true;
+    private bool _fullscreen = true;
+    
     private void CreateMainWindow(GameTime gameTime)
     {
-        var viewport = ImGui.GetMainViewport();
+        ImGuiWindowFlags windowFlags = ImGuiWindowFlags.NoDocking;
 
-        ImGui.SetNextWindowPos(viewport.WorkPos);
-        ImGui.SetNextWindowSize(viewport.WorkSize);
-        ImGui.SetNextWindowViewport(viewport.ID);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0f);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0f);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Num.Vector2.Zero);
+        if (_fullscreen)
+        {
+            var viewport = ImGui.GetMainViewport();
 
-        ImGuiWindowFlags windowFlags =
-            ImGuiWindowFlags.NoDocking |
-            ImGuiWindowFlags.NoTitleBar |
-            ImGuiWindowFlags.NoCollapse |
-            ImGuiWindowFlags.NoResize |
-            ImGuiWindowFlags.NoMove |
-            ImGuiWindowFlags.NoDecoration | 
-            ImGuiWindowFlags.NoBackground;
-        
-        windowFlags |= 
-            //ImGuiWindowFlags.NoBringToFrontOnFocus | 
-            ImGuiWindowFlags.NoFocusOnAppearing; // | 
-            //ImGuiWindowFlags.NoNav | 
-            //ImGuiWindowFlags.NoNavFocus; 
+            ImGui.SetNextWindowPos(viewport.WorkPos);
+            ImGui.SetNextWindowSize(viewport.WorkSize);
+            ImGui.SetNextWindowViewport(viewport.ID);    
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0f);
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0f);
+
+            windowFlags |= ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove;
+            windowFlags |= ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoNavFocus;
+        }
      
-        ImGui.Begin("MainWindow", windowFlags);
-            
-        ImGui.PopStyleVar(3);
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Num.Vector2(0f, 0f));
+        ImGui.Begin("MainWindow", ref _dockspaceOpen, windowFlags);
+        ImGui.PopStyleVar();
+        
+        if (_fullscreen)
+            ImGui.PopStyleVar(2);
+
+        var io = ImGui.GetIO();
+        var style = ImGui.GetStyle();
+        float minWinSizeX = style.WindowMinSize.X;
+        style.WindowMinSize.X = 370f;
 
         _windowDockId = ImGui.GetID("MainDockspace");
-
-        ImGuiDockNodeFlags dockNodeFlags = ImGuiDockNodeFlags.PassthruCentralNode; // | ImGuiDockNodeFlags.PassthruCentralNode; 
-
+        ImGuiDockNodeFlags dockNodeFlags = ImGuiDockNodeFlags.PassthruCentralNode; 
         ImGui.DockSpace(_windowDockId, Num.Vector2.Zero, dockNodeFlags);
 
+        style.WindowMinSize.X = minWinSizeX;
+        
         CreateMainMenuBar();
+        
+        foreach (GuiViewBase view in _views)
+        {
+            view.Draw(gameTime);
+        }
+
+        CreateViewport();
 
         ImGui.End();
+    }
+
+    private bool _viewportFocused = false;
+    private bool _viewportHovered = false;
+    private RectangleF _viewportBounds;
+    private Num.Vector2 _viewportSize;
+    private bool _viewportOpen = true;
+    public Num.Vector2 ViewportMousePos { get; set; }
+
+    private void CreateViewport()
+    {
+        var windowFlags = ImGuiWindowFlags.None;
+
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Num.Vector2.Zero);
+
+        if (ImGui.Begin("Viewport", ref _viewportOpen, windowFlags))
+        {
+            var viewportMinRegion = ImGui.GetWindowContentRegionMin();
+            var viewportMaxRegion = ImGui.GetWindowContentRegionMax();
+            var viewportOffset = ImGui.GetWindowPos();
+
+            _viewportBounds = new RectangleF(
+                x: viewportMinRegion.X + viewportOffset.X,
+                y: viewportMinRegion.Y + viewportOffset.Y,
+                width: viewportMaxRegion.X - viewportMinRegion.X,
+                height: viewportMaxRegion.Y - viewportMinRegion.Y
+            );
+
+            _viewportFocused = ImGui.IsWindowFocused();
+            _viewportHovered = ImGui.IsWindowHovered();
+
+            _viewportSize = ImGui.GetContentRegionAvail();
+
+            //if (ImGui.IsWindowHovered() || ImGui.IsWindowFocused())
+            //{
+            //    var viewportPos = ImGui.GetCursorPos();
+            //    var mousePos = ImGui.GetMousePos();
+            //    if 
+            //}
+
+            ResizeRenderTexture(_viewportSize.X, _viewportSize.Y);
+            UpdateRenderTexture();
+
+            ImGui.Image(_renderTexturePtr, _viewportSize);
+
+            ImGui.End();
+        }
+
+        ImGui.PopStyleVar();
+    }
+
+    public Num.Vector2 GetMouseViewportPos()
+    {
+        return ImGui.GetMousePos() - ImGui.GetMainViewport().WorkPos;
     }
 
     private void CreateMainMenuBar()
@@ -204,6 +260,31 @@ public class GuiService : SimpleDrawableGameComponent
 
             ImGui.EndMainMenuBar();
         }
+    }
+    
+    private void UpdateRenderTexture()
+    {
+        if (_renderTarget == null || _renderTexture == null)
+            return;
+
+        Color[] textureData = new Color[_renderTarget.Width * _renderTarget.Height];
+        _renderTarget.GetData(textureData);
+        _renderTexture.SetData(textureData);
+    }
+
+    private void ResizeRenderTexture(float width, float height)
+    {
+        if (_renderTexture != null && _renderTexture.Bounds.Size.X == (int)width && _renderTexture.Bounds.Size.Y == (int)height)
+            return;
+
+        _renderTarget = new RenderTarget2D(_game.GraphicsDevice, (int)width, (int)height);
+        _renderTexture = new Texture2D(_game.GraphicsDevice, (int)width, (int)height);
+        _renderAreaSize = new Num.Vector2(width, height);
+
+        if (_renderTexturePtr != IntPtr.Zero)
+            _imGuiRenderer.UnbindTexture(_renderTexturePtr);
+        
+        _renderTexturePtr = _imGuiRenderer.BindTexture(_renderTexture);
     }
 
     private static class DebuggingWindows

@@ -11,6 +11,7 @@ public abstract class DiceBase
 
     public int Value { get; private set; }
     private (float Weight, float CumulativeWeight)[] _weights = new (float, float)[6];
+    public (float Weight, float CumulativeWeight)[] Weights => _weights;
     private float _cumulativeWeight;
 
     protected void SetWeights(float side1, float side2, float side3, float side4, float side5, float side6)

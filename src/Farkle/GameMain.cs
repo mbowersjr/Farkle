@@ -43,7 +43,7 @@ public class GameMain : Game
     private Camera<Vector2> _camera;
     public Camera<Vector2> Camera => _camera;
 
-    public static bool DrawDebugLines = false;
+    public static bool DrawDebugLines = true;
 
     public static readonly FastRandom Random = new FastRandom(DateTime.Now.Millisecond);
 
@@ -112,7 +112,9 @@ public class GameMain : Game
         Components.Add(_gameStateManager);
         Services.AddService(_gameStateManager);
 
-        
+        _debugLineColor = new Color(ImGui.GetStyle().Colors[(int)ImGuiCol.PlotLines]);
+        _debugLineColorHovered = new Color(ImGui.GetStyle().Colors[(int)ImGuiCol.PlotLinesHovered]);
+
         base.Initialize();
     }
 
@@ -175,7 +177,7 @@ public class GameMain : Game
 
     protected override void Draw(GameTime gameTime)
     {
-        GraphicsDevice.SetRenderTarget(_guiService.GameAreaView.RenderTarget);
+        GraphicsDevice.SetRenderTarget(_guiService.ViewportRenderTarget);
         
         var bgColor = new Color(ImGui.GetStyle().Colors[(int)ImGuiCol.WindowBg]);
         GraphicsDevice.Clear(bgColor);
@@ -192,19 +194,19 @@ public class GameMain : Game
 
         if (DrawDebugLines)
         {
-            var imguiViewportCenter = ImGui.GetMainViewport().GetWorkCenter();
-            var imguiViewport = ImGui.GetMainViewport();
+            var imguiViewportCenter = _guiService.ViewportRenderTarget.Bounds.Center;
+            var imguiViewport = _guiService.ViewportRenderTarget.Bounds;
             _spriteBatch.DrawLine(
-                point1: new Vector2(imguiViewportCenter.X, imguiViewport.WorkPos.Y), 
-                point2: new Vector2(imguiViewportCenter.X, imguiViewport.WorkPos.Y + imguiViewport.WorkSize.Y), 
-                color: Color.LightBlue, 
+                point1: new Vector2(imguiViewportCenter.X, imguiViewport.Y), 
+                point2: new Vector2(imguiViewportCenter.X, imguiViewport.Y + imguiViewport.Y), 
+                color: _debugLineColor, 
                 thickness: 1f, 
                 layerDepth: 0f
             );
             _spriteBatch.DrawLine(
-                point1: new Vector2(imguiViewport.WorkPos.X, imguiViewportCenter.Y), 
-                point2: new Vector2(imguiViewport.WorkPos.X + imguiViewport.WorkSize.X, imguiViewportCenter.Y), 
-                color: Color.LightBlue, 
+                point1: new Vector2(imguiViewport.X, imguiViewportCenter.Y), 
+                point2: new Vector2(imguiViewport.X + imguiViewport.X, imguiViewportCenter.Y), 
+                color: _debugLineColor, 
                 thickness: 1f, 
                 layerDepth: 0f
             );
@@ -213,14 +215,14 @@ public class GameMain : Game
             _spriteBatch.DrawLine(
                 point1: new Vector2(viewport.Bounds.Center.X, viewport.Bounds.Top), 
                 point2: new Vector2(viewport.Bounds.Center.X, viewport.Bounds.Bottom), 
-                color: Color.White, 
+                color: _debugLineColor, 
                 thickness: 1f, 
                 layerDepth: 0f
             );
             _spriteBatch.DrawLine(
                 point1: new Vector2(viewport.Bounds.Left, viewport.Bounds.Center.Y), 
                 point2: new Vector2(viewport.Bounds.Right, viewport.Bounds.Center.Y), 
-                color: Color.White, 
+                color: _debugLineColor, 
                 thickness: 1f, 
                 layerDepth: 0f
             );
@@ -230,9 +232,9 @@ public class GameMain : Game
 
         GraphicsDevice.SetRenderTarget(null);
 
-        base.Draw(gameTime);
-
         _guiService.Draw(gameTime);
+
+        base.Draw(gameTime);
     }
 
     public void ResetGame()
@@ -280,11 +282,13 @@ public class GameMain : Game
     {
         if (args.Button != MouseButton.Left)
             return;
+        
+        var mouseViewportPos = _guiService.GetMouseViewportPos();
 
         var diceSprites = _gameStateManager.GetDiceSprites(DiceState.Available, DiceState.Selected);
         for (var i = 0; i < diceSprites.Count; i++)
         {
-            if (diceSprites[i].Bounds.Contains(args.Position.ToVector2()))
+            if (diceSprites[i].Bounds.Contains(mouseViewportPos))
             {
                 diceSprites[i].Selected = !diceSprites[i].Selected;
                 diceSprites[i].Rotation = diceSprites[i].Selected ? MathHelper.ToRadians(Random.NextSingle(-20f, 20f)) : 0f;
@@ -335,6 +339,9 @@ public class GameMain : Game
     }
 
     private Color _maskColor = new Color(0, 0, 0, 100);
+    private Color _debugLineColorHovered;
+    private Color _debugLineColor;
+
     private void DrawDice(SpriteBatch spriteBatch, IList<DiceSprite> diceSprites)
     {
         if (diceSprites.Count == 0)
@@ -346,7 +353,7 @@ public class GameMain : Game
         {
             _spriteBatch.DrawRectangle(
                 rectangle: diceBounds.Value,
-                color: Color.White,
+                color: _debugLineColor,
                 thickness: 1f,
                 layerDepth: 0f
             );
@@ -373,9 +380,14 @@ public class GameMain : Game
 
             if (DrawDebugLines)
             {
+                Color lineColor = 
+                    diceSprite.Bounds.Contains(_guiService.GetMouseViewportPos().ToVector2()) ? 
+                        _debugLineColorHovered : 
+                        _debugLineColor;
+                
                 _spriteBatch.DrawRectangle(
                     rectangle: diceSprite.Bounds,
-                    color: Color.White,
+                    color: lineColor,
                     thickness: 1f,
                     layerDepth: 0f
                 );

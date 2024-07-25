@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Farkle.Rules.Scoring;
 using Num = System.Numerics;
 using Microsoft.Xna.Framework;
 using ImGuiNET;
@@ -40,45 +41,25 @@ public class ScorecardView : GuiViewBase
 
         var windowSize = new Num.Vector2(viewport.WorkSize.X * 0.2f, viewport.WorkSize.Y);
         var windowPos = new Num.Vector2(viewport.WorkSize.X - windowSize.X, viewport.WorkPos.Y);
-        
+
         ImGui.SetNextWindowSize(windowSize, ImGuiCond.FirstUseEver);
         ImGui.SetNextWindowPos(windowPos, ImGuiCond.FirstUseEver);
-        ImGui.SetNextWindowDockID(GuiService.WindowDockId, ImGuiCond.FirstUseEver);
+        //ImGui.SetNextWindowDockID(GuiService.WindowDockId, ImGuiCond.FirstUseEver);
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, ImGui.GetStyle().WindowPadding * 2f);
 
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, ImGui.GetStyle().WindowPadding * 1.5f);
-        
-        if (ImGui.Begin("Scorecard", ref _scorecardOpen, ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse))
+        if (ImGui.Begin("Scorecard", ref _scorecardOpen))
         {
             WindowID = ImGui.GetItemID();
 
-            ImGui.Text("Scorecard");
-            ImGui.Separator();
+            ImGui.SeparatorText("Scorecard");
 
-            
-            if (ImGui.BeginTable("Scores", 2, ImGuiTableFlags.None))
+            if (ImGui.BeginTable("Scores", 2, ImGuiTableFlags.BordersOuter | ImGuiTableFlags.BordersInner))
             {
-                ImGui.TableSetupColumn("Dice", ImGuiTableColumnFlags.WidthFixed, ImGui.GetContentRegionAvail().X * 0.75f);
-                ImGui.TableSetupColumn("Score", ImGuiTableColumnFlags.WidthFixed);
+                ImGui.TableSetupColumn("Dice", ImGuiTableColumnFlags.WidthStretch);
+                ImGui.TableSetupColumn("Score", ImGuiTableColumnFlags.WidthFixed, 100f);
                 ImGui.TableHeadersRow();
 
-                for (int i = 0; i < _gameStateManager.ScoredSets.Count; i++)
-                {
-                    ImGui.TableNextRow(ImGuiTableRowFlags.None);
-
-                    ImGui.TableSetColumnIndex(0);
-                    float diceSize = ImGui.GetContentRegionAvail().X / 6f - (25f);
-
-                    var set = _gameStateManager.ScoredSets[i];
-                    for (int j = 0; j < set.Dice.Count; j++)
-                    {
-                        ImGui.Image(_diceSpriteService.GetDiceImagePtr(set.Dice[j].Value), new Num.Vector2(diceSize, diceSize));
-                        if (j < set.Dice.Count)
-                            ImGui.SameLine(0f, 5f);
-                    }
-
-                    ImGui.TableSetColumnIndex(1);
-                    ImGui.Text(set.Score.ToString());
-                }
+                DrawScoredSets();
 
                 ImGui.TableNextRow(ImGuiTableRowFlags.Headers);
                 ImGui.TableSetColumnIndex(1);
@@ -91,5 +72,38 @@ public class ScorecardView : GuiViewBase
         }
 
         ImGui.PopStyleVar();
+    }
+
+    private void DrawScoredSets()
+    {
+        for (int i = 0; i < _gameStateManager.ScoredSets.Count; i++)
+        {
+            ImGui.TableNextRow(ImGuiTableRowFlags.None);
+
+            ImGui.TableSetColumnIndex(0);
+
+            var set = _gameStateManager.ScoredSets[i];
+            DrawScoredSetDice(set);
+
+            ImGui.TableSetColumnIndex(1);
+            ImGui.Text(set.Score.ToString());
+        }
+    }
+
+    private void DrawScoredSetDice(ScoredSet set)
+    {
+        float diceImageSeparation = 5f;
+        float diceImageSize = (ImGui.GetContentRegionAvail().X / 6f) - (diceImageSeparation * (set.Dice.Count - 1));
+
+        for (int i = 0; i < set.Dice.Count; i++)
+        {
+            var diceImagePtr = _diceSpriteService.GetDiceImagePtr(set.Dice[i].Value);
+            ImGui.Image(diceImagePtr, new Num.Vector2(diceImageSize, diceImageSize));
+
+            if (i < set.Dice.Count)
+            {
+                ImGui.SameLine(0f, diceImageSeparation);
+            }
+        }
     }
 }

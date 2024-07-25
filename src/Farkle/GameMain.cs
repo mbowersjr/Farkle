@@ -43,7 +43,7 @@ public class GameMain : Game
     private Camera<Vector2> _camera;
     public Camera<Vector2> Camera => _camera;
 
-    public static bool DrawDebugLines = true;
+    public static bool DrawDebugLines = false;
 
     public static readonly FastRandom Random = new FastRandom(DateTime.Now.Millisecond);
 

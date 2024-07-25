@@ -75,8 +75,9 @@ public class DiceCollectionView : GuiViewBase
 
     private void DrawDiceComponent(int index, (DiceBase DiceBase, DiceSprite DiceSprite) dice)
     {
+        ImGui.AlignTextToFramePadding();
         ImGui.Text($"{index + 1}.");
-        ImGui.SameLine(0f, ImGui.GetStyle().ItemSpacing.X);
+        ImGui.SameLine();
                 
         ImGui.SetNextItemWidth(200f);
 

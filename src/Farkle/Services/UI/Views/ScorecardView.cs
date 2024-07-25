@@ -78,7 +78,7 @@ public class ScorecardView : GuiViewBase
     {
         for (int i = 0; i < _gameStateManager.ScoredSets.Count; i++)
         {
-            ImGui.TableNextRow(ImGuiTableRowFlags.None);
+            ImGui.TableNextRow();
 
             ImGui.TableSetColumnIndex(0);
 
@@ -86,24 +86,27 @@ public class ScorecardView : GuiViewBase
             DrawScoredSetDice(set);
 
             ImGui.TableSetColumnIndex(1);
-            ImGui.Text(set.Score.ToString());
+            
+            ImGui.PushStyleVar(ImGuiStyleVar.SelectableTextAlign, new Num.Vector2(0.5f, 0.5f));
+            ImGui.PushStyleVar(ImGuiStyleVar.DisabledAlpha, 1f);
+            
+            ImGui.Selectable(set.Score.ToString(), false, ImGuiSelectableFlags.Disabled, ImGui.GetItemRectSize());
+            
+            ImGui.PopStyleVar(2);
         }
     }
 
     private void DrawScoredSetDice(ScoredSet set)
     {
-        float diceImageSeparation = 5f;
-        float diceImageSize = (ImGui.GetContentRegionAvail().X / 6f) - (diceImageSeparation * (set.Dice.Count - 1));
+        float diceImageSizeX = ImGui.GetContentRegionAvail().X / 6f - (ImGui.GetStyle().ItemSpacing.X);
 
         for (int i = 0; i < set.Dice.Count; i++)
         {
             var diceImagePtr = _diceSpriteService.GetDiceImagePtr(set.Dice[i].Value);
-            ImGui.Image(diceImagePtr, new Num.Vector2(diceImageSize, diceImageSize));
+            ImGui.Image(diceImagePtr, new Num.Vector2(diceImageSizeX, diceImageSizeX));
 
-            if (i < set.Dice.Count)
-            {
-                ImGui.SameLine(0f, diceImageSeparation);
-            }
+            if (i < set.Dice.Count) 
+                ImGui.SameLine();
         }
     }
 }

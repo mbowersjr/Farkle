@@ -22,6 +22,7 @@
     <None Remove="Content\Fonts\Roboto-Bold.ttf" />
     <None Remove="Content\Fonts\Roboto-Regular.ttf" />
     <None Remove="Icon.ico" />
+    <None Remove="imgui.ini" />
     <EmbeddedResource Include="Icon.ico">
       <LogicalName>Icon.ico</LogicalName>
     </EmbeddedResource>
@@ -50,6 +51,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Content\Fonts\Roboto-Regular.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="imgui.ini">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

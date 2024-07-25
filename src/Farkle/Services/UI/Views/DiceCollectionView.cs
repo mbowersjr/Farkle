@@ -92,9 +92,7 @@ public class DiceCollectionView : GuiViewBase
                 ImGui.PopStyleColor();
 
                 ImGui.SameLine(0f, ImGui.GetStyle().ItemSpacing.X * 2f);
-                ImGui.Text("State:");
-                ImGui.SameLine(0f, ImGui.GetStyle().ItemSpacing.X);
-                ImGui.Text(dice[i].DiceSprite.State.ToString());
+                ImGui.Text(dice[i].DiceBase.Description);
             }
 
             ImGui.End();

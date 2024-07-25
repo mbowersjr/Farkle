@@ -37,9 +37,10 @@ public class GameStateManager : SimpleGameComponent
 
     private Dictionary<string, Type> _diceTypes = new()
     {
-        { "Evens", typeof(EvensDice) },
+        { "Standard", typeof(StandardDice) },
         { "Lucky", typeof(LuckyDice) },
-        { "Standard", typeof(StandardDice) }
+        { "Evens", typeof(EvensDice) },
+        { "Odds", typeof(OddsDice) }
     };
 
     public Dictionary<string, Type> GetDiceTypes()

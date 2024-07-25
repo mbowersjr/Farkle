@@ -1,0 +1,67 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>Farkle</AssemblyName>
+    <RootNamespace>Farkle</RootNamespace>
+    <Platforms>x86;AnyCPU</Platforms>
+    <PublishTrimmed>True</PublishTrimmed>
+    <PublishAot>True</PublishAot>    
+    <TargetFramework>net8.0</TargetFramework>
+    <RollForward>Major</RollForward>
+    <IsPackable>false</IsPackable>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <TieredCompilation>false</TieredCompilation>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Icon.ico</ApplicationIcon>
+    <Nullable>disable</Nullable>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>  
+  <ItemGroup>
+    <None Remove="Content\Fonts\Inconsolata-Bold.ttf" />
+    <None Remove="Content\Fonts\Inconsolata-Regular.ttf" />
+    <None Remove="Content\Fonts\Roboto-Bold.ttf" />
+    <None Remove="Content\Fonts\Roboto-Regular.ttf" />
+    <None Remove="Icon.ico" />
+    <EmbeddedResource Include="Icon.ico">
+      <LogicalName>Icon.ico</LogicalName>
+    </EmbeddedResource>
+    <None Remove="Icon.bmp" />
+    <EmbeddedResource Include="Icon.bmp">
+      <LogicalName>Icon.bmp</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+    <ItemGroup>
+    <None Remove="Content\bin\**" />
+    <None Remove="Content\obj\**" />
+    <Compile Remove="Content\bin\**" />
+    <Compile Remove="Content\obj\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <MonoGameContentReference Include="**\*.mgcb" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Content\Fonts\Inconsolata-Bold.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\Fonts\Inconsolata-Regular.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\Fonts\Roboto-Bold.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\Fonts\Roboto-Regular.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="FontStashSharp.MonoGame" Version="1.3.7" />
+    <PackageReference Include="ImGui.NET" Version="1.90.9.1" />
+    <PackageReference Include="MonoGame.Extended" Version="4.0.0" />
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.1.1034-develop" />
+    <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.1.1034-develop" />
+  </ItemGroup>
+  <Target Name="RestoreDotnetTools" BeforeTargets="Restore">
+    <Message Text="Restoring dotnet tools" Importance="High" />
+    <Exec Command="dotnet tool restore" />
+  </Target>
+</Project>

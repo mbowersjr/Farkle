@@ -82,9 +82,6 @@ public class DiceCollectionView : GuiViewBase
         ImGui.SetNextItemWidth(200f);
 
         DrawDiceTypeCombo(index, dice);
-
-        ImGui.SameLine(0f, ImGui.GetStyle().ItemSpacing.X * 2f);
-        ImGui.Text(dice.DiceBase.Description);
     }
 
     private void DrawDiceTypeCombo(int index, (DiceBase DiceBase, DiceSprite DiceSprite) dice)

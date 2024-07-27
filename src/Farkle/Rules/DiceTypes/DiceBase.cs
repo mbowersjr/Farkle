@@ -9,7 +9,8 @@ public abstract class DiceBase
     public abstract string Name { get; }
     public abstract string Description { get; }
 
-    public int Value { get; private set; }
+    public int Value { get; set; }
+
     private (float Weight, float CumulativeWeight)[] _weights = new (float, float)[6];
     public (float Weight, float CumulativeWeight)[] Weights => _weights;
     private float _cumulativeWeight;

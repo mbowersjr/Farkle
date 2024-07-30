@@ -32,8 +32,8 @@ public class GameMain : Game
     private InputManager _inputManager;
     private InterfaceManager _interfaceManager;
     private ResourceManager _resourceManager;
+    private DiceManager _diceManager;
     private ScoringService _scoringService;
-    private ScoreDisplayComponent _scoreDisplay;
     private ImGuiRenderer _imGuiRenderer;
     private GameStateManager _gameStateManager;
     private GuiFontProvider _fontProvider;
@@ -81,17 +81,16 @@ public class GameMain : Game
         Components.Add(_interfaceManager);
         Services.AddService(_interfaceManager);
 
-        _scoreDisplay = new ScoreDisplayComponent(this);
-        Components.Add(_scoreDisplay);
-        Services.AddService(_scoreDisplay);
-
         _inputManager = new InputManager(this);
         _inputManager.Keyboard.KeyPressed += OnKeyPressed;
         _inputManager.Mouse.MouseClicked += OnMouseClicked;
         Components.Add(_inputManager);
         Services.AddService(_inputManager);
-        
-        _scoringService = new ScoringService();
+
+        _diceManager = new DiceManager(this);
+        Services.AddService(_diceManager);
+
+        _scoringService = new ScoringService(ScoringRules.Standard);
         Services.AddService(_scoringService);
 
         _fontProvider = new GuiFontProvider(_resourceManager);
@@ -241,6 +240,7 @@ public class GameMain : Game
     {
         _gameStateManager.ResetScoredSets();
         _gameStateManager.ResetDiceStates();
+        _gameStateManager.Turn = 0;
         _interfaceManager.ClearLog();
     }
 

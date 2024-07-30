@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using MonoGame.Extended;
 
@@ -47,4 +48,23 @@ public abstract class DiceBase
 
         throw new Exception("Failed to determine side from weighted values.");
     }
+
+    private sealed class DiceBaseEqualityComparer : IEqualityComparer<DiceBase>
+    {
+        public bool Equals(DiceBase x, DiceBase y)
+        {
+            if (ReferenceEquals(x, y)) return true;
+            if (ReferenceEquals(x, null)) return false;
+            if (ReferenceEquals(y, null)) return false;
+            if (x.GetType() != y.GetType()) return false;
+            return x.Name == y.Name && x.Description == y.Description && x.Value == y.Value && Equals(x._weights, y._weights) && x._cumulativeWeight.Equals(y._cumulativeWeight);
+        }
+
+        public int GetHashCode(DiceBase obj)
+        {
+            return HashCode.Combine(obj.Name, obj.Description, obj.Value, obj._weights, obj._cumulativeWeight);
+        }
+    }
+
+    public static IEqualityComparer<DiceBase> DiceBaseComparer { get; } = new DiceBaseEqualityComparer();
 }

@@ -11,14 +11,22 @@ namespace Farkle.Services;
 
 public class DiceManager
 {
-    private readonly Dictionary<DiceBase, DiceSprite> _dice = new Dictionary<DiceBase, DiceSprite>();
+    private Dictionary<DiceBase, DiceSprite> _dice = new Dictionary<DiceBase, DiceSprite>();
         
-    private readonly ScoringService _scoringService;
-    private readonly List<ScoredSet> _scoredSets = new List<ScoredSet>();
-
-    public DiceManager()
+    private ScoringService _scoringService;
+    
+    private readonly GameMain _game;
+    
+    public DiceManager(GameMain game)
     {
-        _scoringService = new ScoringService();
+        _game = game;
+
+        Initialize();
+    }
+
+    protected void Initialize()
+    {
+        _scoringService = _game.Services.GetService<ScoringService>();
     }
 
     public void AddDice<T>(int count) where T : DiceBase, new()
@@ -136,13 +144,23 @@ public class DiceManager
 
     public void Score()
     {
-        var selectedDice = GetDice(DiceState.Selected);
+        var selected = GetDiceSprites(DiceState.Selected);
 
-        _scoringService.CalculateScore(selectedDice);
-        
-        foreach (var dice in selectedDice)
+        ScoredSet scoredSet = _scoringService.CalculateScore(selected);
+
+        if (scoredSet.Combination == ScoredCombination.None)
         {
-            _dice[dice].State = DiceState.Scored;
+            foreach (DiceSprite dice in GetDiceSprites(DiceState.All))
+            {
+                dice.State = DiceState.Scored;
+            }
+
+            return;
+        }
+        
+        foreach (DiceSprite dice in selected)
+        {
+            dice.State = DiceState.Scored;
         }
     }
 }

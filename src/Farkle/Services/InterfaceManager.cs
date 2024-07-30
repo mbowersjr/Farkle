@@ -23,9 +23,7 @@ public class InterfaceManager : SimpleDrawableGameComponent
     private RectangleF _logDrawBounds;
     private SpriteFontBase _logFont;
     private StringBuilder _logStringBuilder = new StringBuilder();
-    private ScoreDisplayComponent _scoreDisplay;
     private readonly ResourceManager _resourceManager;
-    public ScoreDisplayComponent ScoreDisplay => _scoreDisplay;
 
     public InterfaceManager(GameMain game)
     {
@@ -50,8 +48,6 @@ public class InterfaceManager : SimpleDrawableGameComponent
     {
         _game.Window.ClientSizeChanged += OnClientSizeChanged;
             
-        _scoreDisplay = _game.Services.GetService<ScoreDisplayComponent>();
-
         base.Initialize();            
     }
 
@@ -137,7 +133,6 @@ public class InterfaceManager : SimpleDrawableGameComponent
             );
         }
     }
-
     public override void Draw(GameTime gameTime)
     {
         _spriteBatch.Begin(
@@ -146,8 +141,6 @@ public class InterfaceManager : SimpleDrawableGameComponent
             samplerState: SamplerState.PointClamp,
             transformMatrix: _game.Camera.GetViewMatrix()
         );
-
-        _scoreDisplay.Draw(gameTime, _spriteBatch);
 
         RedrawLogMessages(_spriteBatch);
 

@@ -2,14 +2,9 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using Farkle.Rules.DiceTypes;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace Farkle.Rules.Scoring;
-
-public interface IScoringService
-{
-    ScoredSet CalculateScore(IList<DiceSprite> diceSprites);
-    ScoredSet CalculateScore(IList<DiceBase> dice);
-}
 
 /// <summary>
 /// Calculates a score given a set of selected dice.
@@ -26,25 +21,38 @@ public interface IScoringService
 ///     <item> <term> Three 5s </term> <description> 500 </description> </item>
 ///     <item> <term> Three 6s </term> <description> 600 </description> </item>
 ///     <item> <term> Three Pairs </term> <description> 1500 </description> </item>
-///     <item> <term> Four of a Kind </term> <description> 1000 </description> </item>
-///     <item> <term> Five of a Kind </term> <description> 2000 </description> </item>
-///     <item> <term> Six of a Kind </term> <description> 3000 </description> </item>
-///     <item> <term> Straight (1-6) </term> <description> 2500 </description> </item>
+///     <item> <term> Straight (1-6) </term> <description> 3000 </description> </item>
 /// </list>
 /// 
 /// <para>Non-Standard Rules</para>
 /// <list type="table">
 ///     <item> <term> Two Triplets </term> <description> 2500 </description> </item>
+///     <item> <term> Four of a Kind </term> <description> 2x Three of a Kind </description> </item>
 ///     <item> <term> Four of a Kind and a Pair </term> <description> 1500 </description> </item>
+///     <item> <term> Five of a Kind </term> <description> 3x Three of a Kind score </description> </item>
+///     <item> <term> Six of a Kind </term> <description> 10000 </description> </item>
+///     <item> <term> Six 1s </term> <description> Wins the game if <see cref="ScoringRules.SixOnesWins"/> is true, otherwise 10000 </description> </item>
 /// </list>
 /// </remarks>
 public class ScoringService
 {
-    public bool AllowNonStandardCombinations { get; set; }
+    public ScoringRules Rules { get; set; }
 
-    public ScoringService(bool allowNonStandardCombinations = false)
+    public ScoringService(ScoringRules rules)
     {
-        AllowNonStandardCombinations = allowNonStandardCombinations;
+        Rules = rules;
+        InitializeCalculations();
+    }
+
+    private ScoredSet Calculate(IList<DiceBase> dice, ScoredCombination combination)
+    {
+        if (!_calculations.TryGetValue(combination, out var calculation))
+            return ScoredSet.None;
+
+        int[] diceValues = dice.GetValues();
+        int score = calculation(diceValues);
+
+        return new ScoredSet(dice, score, combination);
     }
 
     public ScoredSet CalculateScore(IList<DiceSprite> diceSprites)
@@ -57,79 +65,120 @@ public class ScoringService
     {
         ArgumentNullException.ThrowIfNull(dice);
 
-        int score = 0;
-        
-        var values = dice.Select(x => x.Value).OrderBy(x => x).ToList();
+        var values = dice.GetValues();
         var distinctValues = values.Distinct().ToList();
 
         if (dice.Count == 1)
         {
             if (dice[0].Value == 1)
             {
-                // 1
-                score = 100;
+                // One 1
+                return Calculate(dice, ScoredCombination.One);
             }
-            else if (dice[0].Value == 5)
+            
+            if (dice[0].Value == 5)
             {
-                // 5
-                score = 50;
+                // One 5
+                return Calculate(dice, ScoredCombination.Five);
             }
         }
         else if (dice.Count == 3 && distinctValues.Count == 1)
         {
-            if (dice[0].Value == 1)
-            {
-                // Three 1s
-                score = 1000;
-            }
-            else
-            {
-                // Three of a kind (except 1s)
-                score = dice[0].Value * 100;
-            }
+            // Three of a kind
+            return Calculate(dice, ScoredCombination.ThreeOfAKind);
         }
         else if (dice.Count == 4 && distinctValues.Count == 1)
         {
             // Four of a kind
-            score = 1000;
+            return Calculate(dice, ScoredCombination.FourOfAKind);
         }
         else if (dice.Count == 5 && distinctValues.Count == 1)
         {
             // Five of a kind
-            score = 2000;
+            return Calculate(dice, ScoredCombination.FiveOfAKind);
         }
         else if (dice.Count == 6 && distinctValues.Count == 1)
         {
             // Six of a kind
-            score = 3000;
+            return Calculate(dice, ScoredCombination.SixOfAKind);
         }
-        else if (dice.Count == 6 && distinctValues.Count == 2 && AllowNonStandardCombinations)
+        else if (dice.Count == 6 && distinctValues.Count == 2)
         {
-            var numberOfFirstValue = dice.Count(x => x.Value == distinctValues[0]);
-
-            if (numberOfFirstValue == 3)
-            {
-                // Two triplets
-                score = 2500;
-            }
-            else if (numberOfFirstValue == 2 || numberOfFirstValue == 4)
-            {
-                // Four of a kind and a pair
-                score = 1500;
-            }
+            // Two triplets
+            return Calculate(dice, ScoredCombination.TwoTriplets);
         }
         else if (dice.Count == 6 && distinctValues.Count == 3)
-        {                   
-            // Three pairs
-            score = 1500;
+        {
+            // Three pair
+            return Calculate(dice, ScoredCombination.ThreePairs);
         }
         else if (dice.Count == 6 && distinctValues.Count == 6)
         {
             // Straight 1-6
-            score = 2500;
+            return Calculate(dice, ScoredCombination.Straight);
         }
 
-        var scoredSet = new ScoredSet(dice, score);
-        return scoredSet;
+        return ScoredSet.None;
     }
+
+    public Dictionary<ScoredCombination, Func<int[], int>> _calculations = new Dictionary<ScoredCombination, Func<int[], int>>();
+
+    private void InitializeCalculations()
+    {
+        _calculations.Add(ScoredCombination.One, values => 100);
+        _calculations.Add(ScoredCombination.Five, values => 50);
+        _calculations.Add(ScoredCombination.ThreeOfAKind, values =>
+        {
+            return values[0] switch
+            {
+                1 => 1000,
+                _ => values[0] * 100
+            };
+        });
+        _calculations.Add(ScoredCombination.FourOfAKind, values =>
+        {
+            if (!Rules.AllowNonStandardCombinations) return 0;
+            return values[0] switch
+            {
+                1 => 2000,
+                _ => values[0] * 100 * 2    // 2x Three of a kind score
+            };
+        });
+        _calculations.Add(ScoredCombination.FiveOfAKind, values =>
+        {
+            if (!Rules.AllowNonStandardCombinations) return 0;
+            return values[0] switch
+            {
+                1 => 3000,
+                _ => values[0] * 100 * 3    // 3x Three of a kind score
+            };
+        });
+        _calculations.Add(ScoredCombination.SixOfAKind, values =>
+        {
+            if (!Rules.AllowNonStandardCombinations) return 0;
+            return 10000;
+        });
+        _calculations.Add(ScoredCombination.TwoTriplets, values =>
+        {
+            if (!Rules.AllowNonStandardCombinations) return 0;
+            return 2500;
+        });
+        _calculations.Add(ScoredCombination.ThreePairs, values =>
+        {
+            return 1500;
+        });
+        _calculations.Add(ScoredCombination.Straight, values =>
+        {
+            return 3000;
+        });
+    }
+}
+
+public class ScoringRules
+{
+    public bool AllowNonStandardCombinations { get; set; }
+    public bool SixOnesWins { get; set; }
+
+    public static ScoringRules Standard { get; } = new ScoringRules() { AllowNonStandardCombinations = false, SixOnesWins = false };
+    public static ScoringRules Alternate { get; } = new ScoringRules() { AllowNonStandardCombinations = true, SixOnesWins = true };
 }

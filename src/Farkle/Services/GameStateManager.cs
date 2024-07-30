@@ -18,12 +18,12 @@ public class GameStateManager : SimpleGameComponent
     private InterfaceManager _interfaceManager;
     private InputManager _inputManager;
     private ScoringService _scoringService;
-    private GameMain _game;
-
+    private readonly GameMain _game;
     public DiceManager DiceManager => _diceManager;
                 
     private List<ScoredSet> _scoredSets = new List<ScoredSet>();
     public IList<ScoredSet> ScoredSets => _scoredSets;
+    public int Turn { get; set; }
 
     public GameStateManager(GameMain game)
     {
@@ -33,6 +33,11 @@ public class GameStateManager : SimpleGameComponent
         _interfaceManager = _game.Services.GetService<InterfaceManager>();
         _inputManager = _game.Services.GetService<InputManager>();
         _scoringService = _game.Services.GetService<ScoringService>();
+    }
+
+    public IList<ScoredSet> GetScoredSets()
+    {
+        return _scoredSets.OrderBy(x => x.Turn).ToList();
     }
 
     private Dictionary<string, Type> _diceTypes = new()
@@ -46,11 +51,6 @@ public class GameStateManager : SimpleGameComponent
     public Dictionary<string, Type> GetDiceTypes()
     {
         return _diceTypes;
-    }
-
-    public override void Dispose()
-    {
-        base.Dispose();
     }
 
     public void Log(string message)
@@ -78,12 +78,10 @@ public class GameStateManager : SimpleGameComponent
         _diceManager.Roll();
     }
 
-    public void ClearSelectedDice()
+    public int GetTotalScore()
     {
-        foreach (var die in _diceManager.GetDiceSprites(DiceState.Selected))
-        {
-            die.Selected = false;
-        }
+        int score = _scoredSets.Sum(x => x.Score);
+        return score;
     }
 
     public void ScoreSelectedDice()
@@ -94,8 +92,25 @@ public class GameStateManager : SimpleGameComponent
             return;
         
         var scoredSet = _scoringService.CalculateScore(selected);
-        _scoredSets.Add(scoredSet);
-        _interfaceManager.ScoreDisplay.NeedsUpdated = true;
+        if (scoredSet.Combination == ScoredCombination.None)
+        {
+            foreach (var dice in _diceManager.GetDiceSprites(DiceState.All))
+            {
+                dice.State = DiceState.Scored;
+            }
+
+            return;
+        }
+
+        AddScoredSet(scoredSet);
+
+        if (scoredSet.Combination == ScoredCombination.SixOfAKind && scoredSet.Dice[0].Value == 1)
+        {
+            if (_scoringService.Rules.SixOnesWins)
+            {
+                throw new NotImplementedException("ScoringRules.SixOnesWins");
+            }
+        }
 
         foreach (var die in selected)
         {
@@ -103,10 +118,20 @@ public class GameStateManager : SimpleGameComponent
         }
     }
 
+    public void AddScoredSet(ScoredSet scoredSet)
+    {
+        ArgumentNullException.ThrowIfNull(scoredSet);
+
+        if (scoredSet.Score == 0 || scoredSet.Combination == ScoredCombination.None)
+            return;
+
+        scoredSet.Turn = Turn;
+        _scoredSets.Add(scoredSet);
+    }
+
     public void ResetScoredSets()
     {
         _scoredSets.Clear();
-        _interfaceManager.ScoreDisplay.NeedsUpdated = true;
 
         ResetDiceStates();
     }
@@ -121,7 +146,8 @@ public class GameStateManager : SimpleGameComponent
 
     public override void Initialize()
     {
-        _diceManager = new DiceManager();
+        _diceManager = _game.Services.GetService<DiceManager>();
+
         _diceManager.AddDice<StandardDice>(6);
 
         base.Initialize();

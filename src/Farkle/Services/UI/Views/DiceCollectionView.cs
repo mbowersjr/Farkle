@@ -12,10 +12,10 @@ namespace Farkle.Services.UI.Views;
 
 public class DiceCollectionView : GuiViewBase
 {
-    private bool _diceCollectionOpen = true;
+    public override string Name => "Dice Collection";
+
     private GameStateManager _gameStateManager;
     private DiceSpriteService _diceSpriteService;
-    public override string Name => "Dice Collection";
 
     public DiceCollectionView(GameMain game)
         : base(game)
@@ -44,17 +44,19 @@ public class DiceCollectionView : GuiViewBase
     {
         var viewport = ImGui.GetMainViewport();
 
-        var windowSize = new Num.Vector2(viewport.WorkSize.X * 0.5f, viewport.WorkSize.Y * 0.2f);
-        var windowPos = new Num.Vector2(viewport.WorkPos.X, viewport.WorkSize.Y - windowSize.Y);
+        Size = new Num.Vector2(viewport.WorkSize.X * 0.5f, viewport.WorkSize.Y * 0.2f);
+        Position = new Num.Vector2(viewport.WorkPos.X, viewport.WorkSize.Y - Size.Y);
+        DockId = GuiService.WindowDockId;
 
-        ImGui.SetNextWindowSize(windowSize, ImGuiCond.FirstUseEver);
-        ImGui.SetNextWindowPos(windowPos, ImGuiCond.FirstUseEver);
-        //ImGui.SetNextWindowDockID(GuiService.WindowDockId, ImGuiCond.FirstUseEver);
+        ImGui.SetNextWindowSize(Size, ImGuiCond.FirstUseEver);
+        ImGui.SetNextWindowPos(Position, ImGuiCond.FirstUseEver);
+        ImGui.SetNextWindowDockID(DockId, ImGuiCond.FirstUseEver);
+        
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, ImGui.GetStyle().WindowPadding * 2f);
 
-        if (ImGui.Begin("Dice Collection", ref _diceCollectionOpen, ImGuiWindowFlags.None))
+        if (ImGui.Begin(Name, ref IsVisible, ImGuiWindowFlags.None))
         {
-            WindowID = ImGui.GetItemID();
+            WindowId = ImGui.GetItemID();
 
             ImGui.SeparatorText("Active Dice");
 

@@ -5,7 +5,7 @@ using MonoGame.Extended;
 
 namespace Farkle.Rules.DiceTypes;
 
-public abstract class DiceBase
+public abstract class DiceBase : IComparable<DiceBase>
 {
     public abstract string Name { get; }
     public abstract string Description { get; }
@@ -49,22 +49,27 @@ public abstract class DiceBase
         throw new Exception("Failed to determine side from weighted values.");
     }
 
-    private sealed class DiceBaseEqualityComparer : IEqualityComparer<DiceBase>
-    {
-        public bool Equals(DiceBase x, DiceBase y)
-        {
-            if (ReferenceEquals(x, y)) return true;
-            if (ReferenceEquals(x, null)) return false;
-            if (ReferenceEquals(y, null)) return false;
-            if (x.GetType() != y.GetType()) return false;
-            return x.Name == y.Name && x.Description == y.Description && x.Value == y.Value && Equals(x._weights, y._weights) && x._cumulativeWeight.Equals(y._cumulativeWeight);
-        }
+    #region IComparer
 
-        public int GetHashCode(DiceBase obj)
+    private sealed class ValueNameRelationalComparer : IComparer<DiceBase>
+    {
+        public int Compare(DiceBase x, DiceBase y)
         {
-            return HashCode.Combine(obj.Name, obj.Description, obj.Value, obj._weights, obj._cumulativeWeight);
+            if (ReferenceEquals(x, y)) return 0;
+            if (ReferenceEquals(null, y)) return 1;
+            if (ReferenceEquals(null, x)) return -1;
+            var valueComparison = x.Value.CompareTo(y.Value);
+            if (valueComparison != 0) return valueComparison;
+            return string.Compare(x.Name, y.Name, StringComparison.Ordinal);
         }
     }
 
-    public static IEqualityComparer<DiceBase> DiceBaseComparer { get; } = new DiceBaseEqualityComparer();
+    public static IComparer<DiceBase> ValueNameComparer { get; } = new ValueNameRelationalComparer();
+
+    public int CompareTo(DiceBase other)
+    {
+        return ValueNameComparer.Compare(this, other);
+    }
+
+    #endregion
 }

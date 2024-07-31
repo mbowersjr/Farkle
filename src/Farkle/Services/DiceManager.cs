@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using Farkle.Rules.DiceTypes;
@@ -11,8 +13,10 @@ namespace Farkle.Services;
 
 public class DiceManager
 {
-    private Dictionary<DiceBase, DiceSprite> _dice = new Dictionary<DiceBase, DiceSprite>();
-        
+    private Dictionary<DiceSprite, DiceBase> _dice = new Dictionary<DiceSprite, DiceBase>();
+    
+    private HashSet<DiceSprite> _diceSprites = new HashSet<DiceSprite>();
+
     private ScoringService _scoringService;
     
     private readonly GameMain _game;
@@ -29,6 +33,14 @@ public class DiceManager
         _scoringService = _game.Services.GetService<ScoringService>();
     }
 
+    public void AddDice(int count, Type diceType)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            AddDice(diceType);
+        }
+    }
+
     public void AddDice<T>(int count) where T : DiceBase, new()
     {
         for (var i = 0; i < count; i++)
@@ -37,99 +49,81 @@ public class DiceManager
         }
     }
 
-    public void AddDice<T>() where T : DiceBase, new()
+    public void AddDice(Type diceType)
     {
-        T dice = Activator.CreateInstance<T>();
+        ArgumentNullException.ThrowIfNull(diceType);
+        
+        if (!diceType.IsSubclassOf(typeof(DiceBase)))
+            throw new ArgumentException("Type must be derived from DiceBase", nameof(diceType));
 
-        DiceSprite diceSprite = new DiceSprite(dice);
+        DiceSprite diceSprite = DiceSprite.Create(diceType);
         diceSprite.State = DiceState.Available;
 
-        _dice.Add(dice, diceSprite);
-        
+        _diceSprites.Add(diceSprite);
+        _dice.Add(diceSprite, diceSprite.Dice);
     }
 
-    public (DiceBase DiceBase, DiceSprite DiceSprite) ChangeDiceType(DiceBase oldDie, Type type)
+    public void AddDice<TDice>() where TDice : DiceBase, new()
     {
-        ArgumentNullException.ThrowIfNull(oldDie);
-        ArgumentNullException.ThrowIfNull(type);
-        
-        if (!type.IsSubclassOf(typeof(DiceBase)))
-            throw new ArgumentException("Type must be of DiceBase");
-
-        if (oldDie.GetType() == type)
-            return (oldDie, _dice[oldDie]);
-
-        DiceBase newDie = (DiceBase)Activator.CreateInstance(type);
-        
-        if (newDie == null)
-            throw new InvalidOperationException("Couldn't create instance of of dice type.");
-
-        DiceSprite diceSprite = new DiceSprite(newDie);
-        diceSprite.State = DiceState.Available;
-
-        _dice.Remove(oldDie);
-        _dice.Add(newDie, diceSprite);
-        
-        return (newDie, diceSprite);
+        AddDice(typeof(TDice));
     }
 
-    public void ChangeDiceType<T>(DiceBase dice) where T : DiceBase
+    public void ChangeDiceType([NotNull]DiceSprite diceSprite, [NotNull]Type newType)
     {
-
-        ChangeDiceType(dice, typeof(T));
+        ArgumentNullException.ThrowIfNull(diceSprite);
+        ArgumentNullException.ThrowIfNull(newType);
+        diceSprite.ChangeDiceType(newType);
+    }
+    public void ChangeDiceType<TDice>([NotNull]DiceSprite diceSprite) where TDice : DiceBase, new()
+    {
+        ArgumentNullException.ThrowIfNull(diceSprite);
+        diceSprite.ChangeDiceType<TDice>();
     }
 
-    public void RemoveDice<T>(T dice) where T : DiceBase
+    public void RemoveDice(DiceSprite dice)
     {
         ArgumentNullException.ThrowIfNull(dice);
-
+        
+        _diceSprites.Remove(dice);
         _dice.Remove(dice);
     }
 
-    public IList<DiceBase> GetDiceExact(DiceState state)
+    public void SetAllDiceStates(DiceState state)
     {
-        return GetDiceSpritesExact(state).Select(x => x.Dice).ToList();
-    }
-
-    public IList<DiceBase> GetDice(params DiceState[] states)
-    {
-        return GetDiceSprites(states).Select(x => x.Dice).ToList();
-    }
-
-    public IList<DiceSprite> GetDiceSpritesExact(params DiceState[] states)
-    {
-        if (states.Length == 0)
-            return new List<DiceSprite>();
-
-        if (states.Contains(DiceState.All))
-            return _dice.Values.ToList();
-
-        List<DiceSprite> diceSprites = new List<DiceSprite>();
-        foreach (var state in states)
+        foreach (DiceSprite diceSprite in _diceSprites)
         {
-            var matching = _dice.Values.Where(x => x.State == state && !diceSprites.Contains(x));
-            diceSprites.AddRange(matching);
+            diceSprite.State = state;
+        }
+    }
+
+    public IList<DiceSprite> GetDiceSpritesExact([NotNull]params DiceState[] states)
+    {
+        if (states == null || states.Length == 0 || states.Contains(DiceState.All))
+            return _diceSprites.ToList();
+
+        HashSet<DiceSprite> results = new HashSet<DiceSprite>();
+        foreach (DiceState state in states)
+        {
+            var matching = _diceSprites.Where(x => x.State == state);
+            results.UnionWith(matching);
         }
 
-        return diceSprites;
+        return results.ToList();
     }
 
-    public IList<DiceSprite> GetDiceSprites(params DiceState[] states)
+    public IList<DiceSprite> GetDiceSprites([NotNull]params DiceState[] states)
     {
-        if (states.Length == 0)
-            return new List<DiceSprite>();
+        if (states == null || states.Length == 0 || states.Contains(DiceState.All))
+            return _diceSprites.ToList();
 
-        if (states.Contains(DiceState.All))
-            return _dice.Values.ToList();
-
-        List<DiceSprite> diceSprites = new List<DiceSprite>();
-        foreach (var state in states)
+        HashSet<DiceSprite> results = new HashSet<DiceSprite>();
+        foreach (DiceState state in states)
         {
-            var matching = _dice.Values.Where(x => x.State.HasFlag(state) && !diceSprites.Contains(x));
-            diceSprites.AddRange(matching);
+            var matching = _diceSprites.Where(x => x.State.HasFlag(state));
+            results.UnionWith(matching);
         }
 
-        return diceSprites;
+        return results.ToList();
     }
 
     public void Roll()
@@ -139,28 +133,6 @@ public class DiceManager
         foreach (var dice in availableDice)
         {
             dice.Dice.Roll();
-        }
-    }
-
-    public void Score()
-    {
-        var selected = GetDiceSprites(DiceState.Selected);
-
-        ScoredSet scoredSet = _scoringService.CalculateScore(selected);
-
-        if (scoredSet.Combination == ScoredCombination.None)
-        {
-            foreach (DiceSprite dice in GetDiceSprites(DiceState.All))
-            {
-                dice.State = DiceState.Scored;
-            }
-
-            return;
-        }
-        
-        foreach (DiceSprite dice in selected)
-        {
-            dice.State = DiceState.Scored;
         }
     }
 }

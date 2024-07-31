@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,6 +12,13 @@ using Farkle.Rules.DiceTypes;
 using Farkle.Rules.Scoring;
 
 namespace Farkle.Services;
+
+public enum GameState
+{
+    TurnActive,
+    TurnComplete,
+    GameOver
+}
 
 public class GameStateManager : SimpleGameComponent
 {
@@ -24,6 +32,8 @@ public class GameStateManager : SimpleGameComponent
     private List<ScoredSet> _scoredSets = new List<ScoredSet>();
     public IList<ScoredSet> ScoredSets => _scoredSets;
     public int Turn { get; set; }
+
+    public GameState CurrentState { get; set; } = GameState.GameOver;
 
     public GameStateManager(GameMain game)
     {
@@ -63,18 +73,17 @@ public class GameStateManager : SimpleGameComponent
         _interfaceManager.ClearLog();
     }
 
-    public IList<DiceBase> GetDice(params DiceState[] states)
+    public IList<DiceSprite> GetDiceSprites([NotNull]params DiceState[] states)
     {
-        return _diceManager.GetDice(states);
-    }
-
-    public IList<DiceSprite> GetDiceSprites(params DiceState[] states)
-    {
+        ArgumentNullException.ThrowIfNull(states);
         return _diceManager.GetDiceSprites(states);
     }
 
     public void Roll()
     {
+        if (CurrentState != GameState.TurnActive)
+            return;
+
         _diceManager.Roll();
     }
 
@@ -86,6 +95,9 @@ public class GameStateManager : SimpleGameComponent
 
     public void ScoreSelectedDice()
     {
+        if (CurrentState != GameState.TurnActive)
+            throw new InvalidOperationException($"Can only score dice when in {nameof(GameState.TurnActive)}");
+
         var selected = _diceManager.GetDiceSprites(DiceState.Selected);
             
         if (selected.Count == 0)
@@ -94,28 +106,68 @@ public class GameStateManager : SimpleGameComponent
         var scoredSet = _scoringService.CalculateScore(selected);
         if (scoredSet.Combination == ScoredCombination.None)
         {
-            foreach (var dice in _diceManager.GetDiceSprites(DiceState.All))
-            {
-                dice.State = DiceState.Scored;
-            }
-
+            GameOver();
             return;
         }
 
         AddScoredSet(scoredSet);
 
-        if (scoredSet.Combination == ScoredCombination.SixOfAKind && scoredSet.Dice[0].Value == 1)
+        if (scoredSet.Combination == ScoredCombination.SixOfAKind && scoredSet.Dice[0].Value == 1 && _scoringService.Rules.SixOnesWins)
         {
-            if (_scoringService.Rules.SixOnesWins)
-            {
-                throw new NotImplementedException("ScoringRules.SixOnesWins");
-            }
+            GameOver();
+            return;
         }
 
         foreach (var die in selected)
         {
             die.State = DiceState.Scored;
         }
+
+        var stillAvailable = GetDiceSprites(DiceState.Available);
+        if (stillAvailable.Count == 0)
+        {
+            _diceManager.SetAllDiceStates(DiceState.Available);
+        }
+    }
+
+    public void NewGame()
+    {
+        if (CurrentState != GameState.GameOver)
+            return;
+
+        ResetDiceStates();
+        ResetScoredSets();
+        Turn = 1;
+
+        StartTurn();
+    }
+
+    public void GameOver()
+    {
+        if (CurrentState == GameState.GameOver)
+            return;
+
+        CurrentState = GameState.GameOver;
+
+        _diceManager.SetAllDiceStates(DiceState.None);
+    }
+
+    public void StartTurn()
+    {
+        if (CurrentState == GameState.TurnActive)
+            return;
+
+        CurrentState = GameState.TurnActive;
+        _diceManager.SetAllDiceStates(DiceState.Available);
+    }
+
+    public void EndTurn()
+    {
+        if (CurrentState != GameState.TurnActive)
+            return;
+
+        CurrentState = GameState.TurnComplete;
+        _diceManager.SetAllDiceStates(DiceState.Scored);
     }
 
     public void AddScoredSet(ScoredSet scoredSet)
@@ -138,10 +190,7 @@ public class GameStateManager : SimpleGameComponent
 
     public void ResetDiceStates()
     {
-        foreach (var die in _diceManager.GetDiceSprites(DiceState.All))
-        {
-            die.State = DiceState.Available;
-        }
+        _diceManager.SetAllDiceStates(DiceState.Available);
     }
 
     public override void Initialize()
@@ -149,6 +198,9 @@ public class GameStateManager : SimpleGameComponent
         _diceManager = _game.Services.GetService<DiceManager>();
 
         _diceManager.AddDice<StandardDice>(6);
+
+
+        NewGame();
 
         base.Initialize();
     }

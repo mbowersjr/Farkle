@@ -238,9 +238,7 @@ public class GameMain : Game
 
     public void ResetGame()
     {
-        _gameStateManager.ResetScoredSets();
-        _gameStateManager.ResetDiceStates();
-        _gameStateManager.Turn = 0;
+        _gameStateManager.NewGame();
         _interfaceManager.ClearLog();
     }
 
@@ -253,8 +251,14 @@ public class GameMain : Game
 
         if (args.Key == Keys.Space)
         {
-            _gameStateManager.Log("Rolling...");
-            _gameStateManager.Roll();
+            if (_gameStateManager.CurrentState == GameState.GameOver)
+            {
+                _gameStateManager.NewGame();
+            }
+            else
+            {
+                _gameStateManager.Roll();
+            }
         }
 
         if (args.Key == Keys.D)
@@ -269,12 +273,11 @@ public class GameMain : Game
 
         if (args.Key == Keys.Enter)
         {
-            if (_gameStateManager.GetDice(DiceState.Selected).Count == 0)
+            if (_gameStateManager.CurrentState != GameState.TurnActive)
                 return;
 
-            _gameStateManager.Log($"Scoring selected dice");
-
             _gameStateManager.ScoreSelectedDice();
+            _gameStateManager.Roll();
         }
     }
         

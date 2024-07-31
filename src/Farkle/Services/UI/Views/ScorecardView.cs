@@ -12,11 +12,10 @@ namespace Farkle.Services.UI.Views;
 
 public class ScorecardView : GuiViewBase
 {
-    private bool _scorecardOpen = true;
+    public override string Name => "Scorecard";
+
     private GameStateManager _gameStateManager;
     private DiceSpriteService _diceSpriteService;
-
-    public override string Name => "Scorecard";
 
     public ScorecardView(GameMain game)
         : base(game)
@@ -39,17 +38,20 @@ public class ScorecardView : GuiViewBase
     {
         var viewport = ImGui.GetMainViewport();
 
-        var windowSize = new Num.Vector2(viewport.WorkSize.X * 0.2f, viewport.WorkSize.Y);
-        var windowPos = new Num.Vector2(viewport.WorkSize.X - windowSize.X, viewport.WorkPos.Y);
+        Size = new Num.Vector2(viewport.WorkSize.X * 0.2f, viewport.WorkSize.Y);
+        Position = new Num.Vector2(viewport.WorkSize.X - Size.X, viewport.WorkPos.Y);
 
-        ImGui.SetNextWindowSize(windowSize, ImGuiCond.FirstUseEver);
-        ImGui.SetNextWindowPos(windowPos, ImGuiCond.FirstUseEver);
-        //ImGui.SetNextWindowDockID(GuiService.WindowDockId, ImGuiCond.FirstUseEver);
+        ImGui.SetNextWindowSize(Size, ImGuiCond.FirstUseEver);
+        ImGui.SetNextWindowPos(Position, ImGuiCond.FirstUseEver);
+        ImGui.SetNextWindowDockID(DockId, ImGuiCond.FirstUseEver);
+
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, ImGui.GetStyle().WindowPadding * 2f);
 
-        if (ImGui.Begin("Scorecard", ref _scorecardOpen))
+        ImGuiWindowFlags windowFlags = ImGuiWindowFlags.None;
+
+        if (ImGui.Begin(Name, ref IsVisible, windowFlags))
         {
-            WindowID = ImGui.GetItemID();
+            WindowId = ImGui.GetItemID();
 
             ImGui.SeparatorText("Scorecard");
 
@@ -63,7 +65,8 @@ public class ScorecardView : GuiViewBase
 
                 ImGui.TableNextRow(ImGuiTableRowFlags.Headers);
                 ImGui.TableSetColumnIndex(1);
-                ImGui.Text(_gameStateManager.ScoredSets.Sum(x => x.Score).ToString());
+                int totalScore = _gameStateManager.GetTotalScore();
+                ImGui.Text($"{totalScore}");
 
                 ImGui.EndTable();
             }
@@ -76,13 +79,14 @@ public class ScorecardView : GuiViewBase
 
     private void DrawScoredSets()
     {
-        for (int i = 0; i < _gameStateManager.ScoredSets.Count; i++)
+        var scoredSets = _gameStateManager.GetScoredSets();
+        for (int i = 0; i < scoredSets.Count; i++)
         {
             ImGui.TableNextRow();
 
             ImGui.TableSetColumnIndex(0);
 
-            var set = _gameStateManager.ScoredSets[i];
+            var set = scoredSets[i];
             DrawScoredSetDice(set);
 
             ImGui.TableSetColumnIndex(1);
@@ -105,7 +109,7 @@ public class ScorecardView : GuiViewBase
             var diceImagePtr = _diceSpriteService.GetDiceImagePtr(set.Dice[i].Value);
             ImGui.Image(diceImagePtr, new Num.Vector2(diceImageSizeX, diceImageSizeX));
 
-            if (i < set.Dice.Count) 
+            if (i < set.Dice.Count)
                 ImGui.SameLine();
         }
     }

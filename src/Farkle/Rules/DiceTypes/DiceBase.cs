@@ -1,15 +1,17 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using MonoGame.Extended;
 
 namespace Farkle.Rules.DiceTypes;
 
-public abstract class DiceBase
+public abstract class DiceBase : IComparable<DiceBase>
 {
     public abstract string Name { get; }
     public abstract string Description { get; }
 
-    public int Value { get; private set; }
+    public int Value { get; set; }
+
     private (float Weight, float CumulativeWeight)[] _weights = new (float, float)[6];
     public (float Weight, float CumulativeWeight)[] Weights => _weights;
     private float _cumulativeWeight;
@@ -46,4 +48,28 @@ public abstract class DiceBase
 
         throw new Exception("Failed to determine side from weighted values.");
     }
+
+    #region IComparer
+
+    private sealed class ValueNameRelationalComparer : IComparer<DiceBase>
+    {
+        public int Compare(DiceBase x, DiceBase y)
+        {
+            if (ReferenceEquals(x, y)) return 0;
+            if (ReferenceEquals(null, y)) return 1;
+            if (ReferenceEquals(null, x)) return -1;
+            var valueComparison = x.Value.CompareTo(y.Value);
+            if (valueComparison != 0) return valueComparison;
+            return string.Compare(x.Name, y.Name, StringComparison.Ordinal);
+        }
+    }
+
+    public static IComparer<DiceBase> ValueNameComparer { get; } = new ValueNameRelationalComparer();
+
+    public int CompareTo(DiceBase other)
+    {
+        return ValueNameComparer.Compare(this, other);
+    }
+
+    #endregion
 }

@@ -1,4 +1,7 @@
-﻿using System.Drawing;
+﻿using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using Farkle.Rules.DiceTypes;
 using Point = Microsoft.Xna.Framework.Point;
 using Rectangle = Microsoft.Xna.Framework.Rectangle;
 using SizeF = MonoGame.Extended.SizeF;
@@ -15,5 +18,9 @@ public static class Extensions
     public static SizeF ToSizeF(this PointF pointf) => new(pointf.X, pointf.Y);
     public static PointF ToPointF(this SizeF sizef) => new(sizef.Width, sizef.Height);
     public static PointF ToPointF(this Point point) => new(point.X, point.Y);
+
+
+    public static int[] GetValues(this IEnumerable<DiceBase> dice) => dice.Select(x => x.Value).OrderBy(x => x).ToArray();
+    public static int[] GetValues(this IEnumerable<DiceSprite> dice) => dice.Select(x => x.Dice.Value).OrderBy(x => x).ToArray();
 
 }

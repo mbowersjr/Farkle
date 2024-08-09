@@ -188,8 +188,11 @@ public class GameMain : Game
             transformMatrix: _camera.GetViewMatrix()
         );
 
-        var diceSprites = _gameStateManager.GetDiceSprites(DiceState.All).ToList();
-        DrawDice(_spriteBatch, diceSprites);
+        if (_gameStateManager.CurrentState != GameState.TurnBegin && _gameStateManager.CurrentState != GameState.GameOver)
+        {
+            var diceSprites = _gameStateManager.GetDiceSprites(DiceState.All);
+            DrawDice(_spriteBatch, diceSprites);
+        }
 
         if (DrawDebugLines)
         {
@@ -273,11 +276,10 @@ public class GameMain : Game
 
         if (args.Key == Keys.Enter)
         {
-            if (_gameStateManager.CurrentState != GameState.TurnActive)
+            if (_gameStateManager.CurrentState != GameState.RollActive)
                 return;
 
             _gameStateManager.ScoreSelectedDice();
-            _gameStateManager.Roll();
         }
     }
         
@@ -285,7 +287,10 @@ public class GameMain : Game
     {
         if (args.Button != MouseButton.Left)
             return;
-        
+
+        if (_gameStateManager.CurrentState != GameState.RollActive)
+            return;
+
         var mouseViewportPos = _guiService.GetMouseViewportPos();
 
         var diceSprites = _gameStateManager.GetDiceSprites(DiceState.Available, DiceState.Selected);
@@ -294,7 +299,8 @@ public class GameMain : Game
             if (diceSprites[i].Bounds.Contains(mouseViewportPos))
             {
                 diceSprites[i].Selected = !diceSprites[i].Selected;
-                diceSprites[i].Rotation = diceSprites[i].Selected ? MathHelper.ToRadians(Random.NextSingle(-20f, 20f)) : 0f;
+                //diceSprites[i].Rotation = diceSprites[i].Selected ? MathHelper.ToRadians(Random.NextSingle(-20f, 20f)) : 0f;
+                _gameStateManager.UpdateCurrentSelectionCombinations();
             }
         }
     }

@@ -7,7 +7,7 @@ namespace Farkle.Rules.Scoring;
 
 public class ScoredSet
 {
-    public List<DiceBase> Dice { get; set; } = new List<DiceBase>();
+    public int[] Values { get; set; }
     public int Score { get; private set; } = 0;
     public int Turn { get; set; } = 0;
     public ScoredCombination Combination { get; private set; } = ScoredCombination.None;
@@ -20,7 +20,7 @@ public class ScoredSet
     {
         ArgumentNullException.ThrowIfNull(dice);
 
-        Dice = dice.OrderBy(x => x.Value).ThenBy(x => x.Name).ToList();
+        Values = dice.OrderBy(x => x.Value).Select(x => x.Value).ToArray();
         Score = score;
         Combination = combination;
         Turn = turn;
@@ -34,12 +34,12 @@ public class ScoredSet
             if (ReferenceEquals(x, null)) return false;
             if (ReferenceEquals(y, null)) return false;
             if (x.GetType() != y.GetType()) return false;
-            return Equals(x.Dice, y.Dice) && x.Score == y.Score && x.Turn == y.Turn && x.Combination == y.Combination;
+            return Equals(x.Values, y.Values) && x.Score == y.Score && x.Turn == y.Turn && x.Combination == y.Combination;
         }
 
         public int GetHashCode(ScoredSet obj)
         {
-            return HashCode.Combine(obj.Dice, obj.Score, obj.Turn, (int)obj.Combination);
+            return HashCode.Combine(obj.Values, obj.Score, obj.Turn, (int)obj.Combination);
         }
     }
 

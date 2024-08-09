@@ -40,6 +40,7 @@ public class ScorecardView : GuiViewBase
 
         Size = new Num.Vector2(viewport.WorkSize.X * 0.2f, viewport.WorkSize.Y);
         Position = new Num.Vector2(viewport.WorkSize.X - Size.X, viewport.WorkPos.Y);
+        DockId = GuiService.WindowDockId;
 
         ImGui.SetNextWindowSize(Size, ImGuiCond.FirstUseEver);
         ImGui.SetNextWindowPos(Position, ImGuiCond.FirstUseEver);
@@ -104,12 +105,12 @@ public class ScorecardView : GuiViewBase
     {
         float diceImageSizeX = ImGui.GetContentRegionAvail().X / 6f - (ImGui.GetStyle().ItemSpacing.X);
 
-        for (int i = 0; i < set.Dice.Count; i++)
+        for (int i = 0; i < set.Values.Length; i++)
         {
-            var diceImagePtr = _diceSpriteService.GetDiceImagePtr(set.Dice[i].Value);
+            var diceImagePtr = _diceSpriteService.GetDiceImagePtr(set.Values[i]);
             ImGui.Image(diceImagePtr, new Num.Vector2(diceImageSizeX, diceImageSizeX));
 
-            if (i < set.Dice.Count)
+            if (i < set.Values.Length)
                 ImGui.SameLine();
         }
     }

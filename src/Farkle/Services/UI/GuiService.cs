@@ -16,6 +16,8 @@ namespace Farkle.Services.UI;
 
 public class GuiService : SimpleDrawableGameComponent
 {
+    public const float NegFltMin = -float.MinValue;
+
     private readonly GameMain _game;
     public ImGuiRenderer ImGuiRenderer => _imGuiRenderer;
     private ImGuiRenderer _imGuiRenderer;
@@ -56,6 +58,7 @@ public class GuiService : SimpleDrawableGameComponent
 
         _views.Add(new ScorecardView(_game));
         _views.Add(new DiceCollectionView(_game));
+        _views.Add(new GameControlsView(_game));
         
         foreach (GuiViewBase view in _views)
         {

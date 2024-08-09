@@ -5,9 +5,9 @@ using Moq;
 
 namespace Farkle.Tests.Dice;
 
-public class DiceTest
+public class DiceTests
 {
-    DiceManager _diceManager;
+    private DiceManager _diceManager;
 
     private void Setup() 
     {
@@ -20,7 +20,7 @@ public class DiceTest
     {
         //Arrange
         Setup();
-        _diceManager.AddDice(typeof(EvensDice));
+        _diceManager.AddDice<EvensDice>(1);
 
         //Act
         _diceManager.Roll();
@@ -32,25 +32,18 @@ public class DiceTest
     }
 
     [Fact]
-    public void Lucky_Dice_Rolls_1s_Or_5s_Statistically_Higher()
+    public void Odds_Dice_Rolls_Odd()
     {
         //Arrange
         Setup();
-        _diceManager.AddDice(typeof(LuckyDice));
-        var diceOutcomes = new List<int>();
+        _diceManager.AddDice<OddsDice>(1);
 
         //Act
-        for (int i = 0; i < 10000; i++)
-        {
-            _diceManager.Roll();
-            diceOutcomes.Add(_diceManager.GetDiceSpritesExact()[0].Value);
-        }
+        _diceManager.Roll();
 
         //Assert
-        var luckyRollsCount = diceOutcomes.Where(d => d == 5 || d == 1).Count();
-        decimal luckyRollsPercentage = ((luckyRollsCount / 10000) * 100);
-
-        Assert.True(luckyRollsCount > 50);
+        var dice = _diceManager.GetDiceSpritesExact();
+        Assert.True((dice[0].Dice.Value % 2) != 0);
 
     }
 }

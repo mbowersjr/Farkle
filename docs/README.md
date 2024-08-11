@@ -28,7 +28,7 @@
 ## Scoring
 
 | Combination            | Score |
-|------------------------|-------|
+|:-----------------------|------:|
 | 1                      |   100 |
 | 5                      |    50 |
 | 1 1 1                  |  1000 |
@@ -46,8 +46,28 @@
 | Straight (1-6)         |  1500 |
 | 3 Failed Rolls         | -1000 |
 
+<details>
+
+<summary>Scoring Chart Image</summary>
+
 ![Scoring Chart](https://cdn11.bigcommerce.com/s-70184/product_images/uploaded_images/farkle-scoring-chart.jpg)
 
+</details>
+
+## Kingdom Come Deliverance Scoring
+
+The combinations allowed in Kingdom Come: Deliverance's implementation of Farkle used the following differences from the [standard scoring above](#scoring).
+| Combination            | Score          |
+|:-----------------------|---------------:|
+| 4 of a Kind            | 2x 3 of a Kind |
+| Straight (1-6)         |           1500 |
+| Partial Straight (1-5) |            500 |
+| Partial Straight (2-6) |            750 |
+
+4 of a Kind is worth 2x the score of 3 of a Kind for that value. Where three `3 3 3` is worth 300, `3 3 3 3` is worth 600.
+
 ## References
+
 - [Farkle Rules](https://www.dicegamedepot.com/farkle-rules/)
 - [Farkle Scoring and Rules Summary PDF](https://www.dicegamedepot.com/content/pdf/farkle-scoring-rules-dicegamedepot.pdf)
+- [Kingdom Come: Deliverance Wiki](https://kingdom-come-deliverance.fandom.com/wiki/Dice#Types_of_Dice)

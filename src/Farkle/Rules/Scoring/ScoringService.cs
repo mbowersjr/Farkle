@@ -15,29 +15,24 @@ namespace Farkle.Rules.Scoring;
 ///     <item> <term> 1 </term> <description> 100 </description> </item>
 ///     <item> <term> 5 </term> <description> 50 </description> </item>
 ///     <item> <term> Three 1s </term> <description> 1000 </description> </item>
-///     <item> <term> Three 2s </term> <description> 200 </description> </item>
-///     <item> <term> Three 3s </term> <description> 300 </description> </item>
-///     <item> <term> Three 4s </term> <description> 400 </description> </item>
-///     <item> <term> Three 5s </term> <description> 500 </description> </item>
-///     <item> <term> Three 6s </term> <description> 600 </description> </item>
-///     <item> <term> Three Pairs </term> <description> 1500 </description> </item>
-///     <item> <term> Straight (1-6) </term> <description> 3000 </description> </item>
-/// </list>
-/// 
-/// <para>Non-Standard Rules</para>
-/// <list type="table">
-///     <item> <term> Two Triplets </term> <description> 2500 </description> </item>
+///     <item> <term> Three of a Kind (except 1s) </term> <description> N * 100 </description> </item>
 ///     <item> <term> Four of a Kind </term> <description> 2x Three of a Kind </description> </item>
-///     <item> <term> Four of a Kind and a Pair </term> <description> 1500 </description> </item>
-///     <item> <term> Five of a Kind </term> <description> 3x Three of a Kind score </description> </item>
-///     <item> <term> Six of a Kind </term> <description> 10000 </description> </item>
-///     <item> <term> Six 1s </term> <description> Wins the game if <see cref="ScoringRules.SixOnesWins"/> is true, otherwise 10000 </description> </item>
+///     <item> <term> Five of a Kind </term> <description> 2x Four of a Kind score </description> </item>
+///     <item> <term> Six of a Kind </term> <description> 2x Five of a Kind score </description> </item>
+///     <item> <term> Straight (1-6) </term> <description> 1500 </description> </item>
+///     <item> <term> Partial Straight (1-5) </term> <description> 500 </description> </item>
+///     <item> <term> Partial Straight (2-6) </term> <description> 750 </description> </item>
 /// </list>
 /// </remarks>
 public class ScoringService
 {
     public ScoringRules Rules { get; set; }
 
+    public ScoringService()
+        : this(ScoringRules.Standard)
+    {
+    }
+    
     public ScoringService(ScoringRules rules)
     {
         Rules = rules;
@@ -102,26 +97,33 @@ public class ScoringService
             // Six of a kind
             return Calculate(dice, ScoredCombination.SixOfAKind);
         }
-        else if (dice.Count == 6 && distinctValues.Count == 2)
-        {
-            // Two triplets
-            return Calculate(dice, ScoredCombination.TwoTriplets);
-        }
-        else if (dice.Count == 6 && distinctValues.Count == 3)
-        {
-            // Three pair
-            return Calculate(dice, ScoredCombination.ThreePairs);
-        }
         else if (dice.Count == 6 && distinctValues.Count == 6)
         {
             // Straight 1-6
             return Calculate(dice, ScoredCombination.Straight);
         }
+        else if (dice.Count == 5 && distinctValues.Count == 5)
+        {
+            if (dice[0].Value == 1)
+            {
+                // Partial Straight (1-5)
+                return Calculate(dice, ScoredCombination.PartialStraightLow);
+            }
+            if (dice[0].Value == 2)
+            {
+                // Partial Straight (2-6)
+                return Calculate(dice, ScoredCombination.PartialStraightHigh);
+            }
+        }
+        //else if (dice.Count == 5 && distinctValues.Count == 5)
+        //{
+        //    return Calculate(dice, ScoredCombination.PartialStraight);
+        //}
 
         return ScoredSet.None;
     }
 
-    public Dictionary<ScoredCombination, Func<int[], int>> _calculations = new Dictionary<ScoredCombination, Func<int[], int>>();
+    private readonly Dictionary<ScoredCombination, Func<int[], int>> _calculations = new Dictionary<ScoredCombination, Func<int[], int>>();
 
     private void InitializeCalculations()
     {
@@ -137,7 +139,6 @@ public class ScoringService
         });
         _calculations.Add(ScoredCombination.FourOfAKind, values =>
         {
-            if (!Rules.AllowNonStandardCombinations) return 0;
             return values[0] switch
             {
                 1 => 2000,
@@ -146,39 +147,30 @@ public class ScoringService
         });
         _calculations.Add(ScoredCombination.FiveOfAKind, values =>
         {
-            if (!Rules.AllowNonStandardCombinations) return 0;
             return values[0] switch
             {
-                1 => 3000,
-                _ => values[0] * 100 * 3    // 3x Three of a kind score
+                1 => 4000,
+                _ => values[0] * 100 * 4    // 2x Four of a kind score
             };
         });
         _calculations.Add(ScoredCombination.SixOfAKind, values =>
         {
-            if (!Rules.AllowNonStandardCombinations) return 0;
-            return 10000;
+            return values[0] switch
+            {
+                1 => 8000,
+                _ => values[0] * 100 * 8    // 2x Five of a kind score
+            };
         });
-        _calculations.Add(ScoredCombination.TwoTriplets, values =>
-        {
-            if (!Rules.AllowNonStandardCombinations) return 0;
-            return 2500;
-        });
-        _calculations.Add(ScoredCombination.ThreePairs, values =>
-        {
-            return 1500;
-        });
-        _calculations.Add(ScoredCombination.Straight, values =>
-        {
-            return 3000;
-        });
+        _calculations.Add(ScoredCombination.Straight, values => 1500);
+        _calculations.Add(ScoredCombination.PartialStraightLow, values => 500);
+        _calculations.Add(ScoredCombination.PartialStraightHigh, values => 750);
+        //_calculations.Add(ScoredCombination.PartialStraight, values =>
+        //{
+        //    return values[0] switch
+        //    {
+        //        1 => 500,   // 1 2 3 4 5
+        //        2 => 750    // 2 3 4 5 6
+        //    };
+        //});
     }
-}
-
-public class ScoringRules
-{
-    public bool AllowNonStandardCombinations { get; set; }
-    public bool SixOnesWins { get; set; }
-
-    public static ScoringRules Standard { get; } = new ScoringRules() { AllowNonStandardCombinations = false, SixOnesWins = false };
-    public static ScoringRules Alternate { get; } = new ScoringRules() { AllowNonStandardCombinations = true, SixOnesWins = true };
 }

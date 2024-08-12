@@ -183,8 +183,13 @@ public class GameStateManager : SimpleGameComponent
     {
         if (CurrentState == GameState.TurnEnd)
             return;
-        
-        if (failedTurn || _scoredSets.Count(x => x.Turn == Turn) == 0)
+
+        if (CurrentState == GameState.RollActive)
+        {
+            failedTurn = true;
+        }
+
+        if (failedTurn)
         {
             _scoredSets.RemoveAll(x => x.Turn == Turn);
         }

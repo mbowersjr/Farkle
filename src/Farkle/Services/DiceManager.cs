@@ -126,10 +126,26 @@ public class DiceManager
         return results.ToList();
     }
 
+    //public void RollValues(params int[] values)
+    //{
+    //    var dice = GetDiceSpritesExact(DiceState.All);
+        
+    //    for (int i = 0; i < values.Length; i++)
+    //    {
+    //        dice[i].State = DiceState.Available;
+    //        dice[i].Value = values[i];
+    //    }
+
+    //    for (int i = values.Length; i < dice.Count; i++)
+    //    {
+    //        dice[i].State = DiceState.None;
+    //    }
+    //}
+
     public void Roll()
     {
         var availableDice = GetDiceSpritesExact(DiceState.Available);
-        
+
         foreach (var dice in availableDice)
         {
             dice.Dice.Roll();

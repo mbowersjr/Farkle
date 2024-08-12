@@ -27,24 +27,25 @@
 
 ## Scoring
 
-| Combination            | Score |
-|:-----------------------|------:|
-| 1                      |   100 |
-| 5                      |    50 |
-| 1 1 1                  |  1000 |
-| 2 2 2                  |   200 |
-| 3 3 3                  |   300 |
-| 4 4 4                  |   400 |
-| 5 5 5                  |   500 |
-| 6 6 6                  |   600 |
-| 3 Pairs                |  1500 |
-| 2 Triplets             |  2500 |
-| 4 of a Kind            |  1000 |
-| 5 of a Kind            |  2000 |
-| 6 of a Kind            |  3000 |
-| 4 of a Kind and a Pair |  1500 |
-| Straight (1-6)         |  1500 |
-| 3 Failed Rolls         | -1000 |
+| Combination                 | Score              |
+|:----------------------------|-------------------:|
+| 1                           |                100 |
+| 5                           |                 50 |
+| Three 1s                    |               1000 |
+| Three of a Kind (except 1s) |        Value * 100 |
+| Four of a Kind              | 2x Three of a Kind |
+| Five of a Kind              |  2x Four of a Kind |
+| Six of a Kind               |  2x Five of a Kind |
+| Straight (1-6)              |               1500 |
+| Partial Straight (1-5)      |                500 |
+| Partial Straight (2-6)      |                750 |
+
+- **Four of a Kind** is worth 2x the score of **Three of a Kind** for that value.<br>
+Where `3 3 3` is worth 300, `3 3 3 3` is worth 600.
+- **Five of a Kind** is worth 2x the score of **Four of a Kind** for that value.<br>
+Where `3 3 3 3` is worth 600, `3 3 3 3 3` is worth 1200.
+- **Six of a Kind** is worth 2x the score of **Five of a Kind** for that value.<br>
+Where `3 3 3 3 3` is worth 1200, `3 3 3 3 3 3` is worth 2400.
 
 <details>
 
@@ -53,18 +54,6 @@
 ![Scoring Chart](https://cdn11.bigcommerce.com/s-70184/product_images/uploaded_images/farkle-scoring-chart.jpg)
 
 </details>
-
-## Kingdom Come Deliverance Scoring
-
-The combinations allowed in Kingdom Come: Deliverance's implementation of Farkle used the following differences from the [standard scoring above](#scoring).
-| Combination            | Score          |
-|:-----------------------|---------------:|
-| 4 of a Kind            | 2x 3 of a Kind |
-| Straight (1-6)         |           1500 |
-| Partial Straight (1-5) |            500 |
-| Partial Straight (2-6) |            750 |
-
-4 of a Kind is worth 2x the score of 3 of a Kind for that value. Where three `3 3 3` is worth 300, `3 3 3 3` is worth 600.
 
 ## References
 

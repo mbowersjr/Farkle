@@ -61,7 +61,11 @@ public class DiceSprite : IComparable<DiceSprite>
     public bool Is(DiceState state) => State.HasFlag(state);
 
     public DiceBase Dice { get; set; }
-    public int Value => Dice.Value;
+    public int Value
+    {
+        get => Dice.Value;
+        set => Dice.Value = value;
+    }
 
     public DiceSprite([NotNull] DiceBase dice)
     {
